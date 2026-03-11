@@ -16,17 +16,17 @@ import com.example.calanque.screens.AccountScreen
 import com.example.calanque.screens.ActivitiesScreen
 import com.example.calanque.screens.PanierScreen
 import com.example.calanque.screens.CarteScreen
+import androidx.compose.foundation.layout.padding
 
-// TOUT en iconRes Int, plus de ImageVector
 sealed class Screen(
     val route:   String,
     val label:   String,
     val iconRes: Int
 ) {
-    object Activites : Screen("activites", "Activités", R.drawable.ic_activites)
-    object Panier    : Screen("panier",    "Panier",    R.drawable.ic_basket_background)
-    object Compte    : Screen("compte",    "Compte",    R.drawable.ic_basket_background)
-    object Carte     : Screen("carte",     "Carte",     R.drawable.ic_carte)
+    object Activites : Screen("activites", "Activités", R.drawable.baseline_explore_48)
+    object Panier    : Screen("panier",    "Panier",    R.drawable.baseline_shopping_basket_48)
+    object Compte    : Screen("compte",    "Compte",    R.drawable.baseline_person_48)
+    object Carte     : Screen("carte",     "Carte",     R.drawable.baseline_map_48)
 }
 
 val bottomNavItems = listOf(
