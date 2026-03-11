@@ -14,10 +14,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.calanque.R
 import com.example.calanque.screens.AccountScreen
 import com.example.calanque.screens.ActivitiesScreen
-import com.example.calanque.screens.PanierScreen
 import com.example.calanque.screens.CarteScreen
 import androidx.compose.foundation.layout.padding
 import com.example.calanque.screens.HomeScreen
+import com.example.calanque.screens.PanierScreen
 
 sealed class Screen(
     val route:   String,
