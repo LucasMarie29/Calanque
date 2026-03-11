@@ -36,6 +36,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.http.GET
 import com.example.calanque.R
+
 @Serializable
 data class ActivityType(
     val id: Int,
