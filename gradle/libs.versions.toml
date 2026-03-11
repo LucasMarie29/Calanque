@@ -8,6 +8,7 @@ espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.10.1"
 composeBom = "2024.09.00"
+retrofit = "2.9.0"
 navigationCompose = "2.7.7"
 navigationCommonAndroid = "2.9.7"
 engageCore = "1.5.11"
@@ -27,6 +28,8 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-converter-scalars = { group = "com.squareup.retrofit2", name = "converter-scalars", version.ref = "retrofit" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-navigation-common-android = { group = "androidx.navigation", name = "navigation-common-android", version.ref = "navigationCommonAndroid" }
 engage-core = { group = "com.google.android.engage", name = "engage-core", version.ref = "engageCore" }

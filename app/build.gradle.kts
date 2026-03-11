@@ -49,6 +49,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.scalars)
     implementation(libs.androidx.navigation.common.android)
     implementation(libs.engage.core)
     testImplementation(libs.junit)
