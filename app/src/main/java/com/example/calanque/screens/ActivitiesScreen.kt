@@ -25,19 +25,7 @@ import retrofit2.Retrofit
 import retrofit2.http.GET
 import com.example.calanque.R
 import kotlinx.serialization.SerialName
-
-// 1. Le modèle de données (Activity et non ActivityType)
-@Serializable
-data class Activity(
-    val id: Int,
-    @SerialName("nom")
-    val nom: String = "Inconnu",
-    val duree: String? = null,
-    @SerialName("tarif")
-    val prix: Double = 0.0,
-    @SerialName("image_url")
-    val image_url: String?
-)
+import com.example.calanque.models.Activity
 
 // 2. L'interface avec le bon nom
 interface ActivitiesService {
