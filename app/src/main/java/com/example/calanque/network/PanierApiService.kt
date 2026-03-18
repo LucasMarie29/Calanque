@@ -1,5 +1,6 @@
 package com.example.calanque.network
 
+import com.example.calanque.model.Reservation
 import retrofit2.Retrofit
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.GET
@@ -12,8 +13,8 @@ private val retrofit = Retrofit.Builder()
     .baseUrl(BASE_URL)
     .build()
 interface PanierApiService {
-    @GET("api/reservation")
-    suspend fun getReservation(): String
+    @GET("api/reservations/my")
+    suspend fun getReservation(): List<Reservation>
 }
 
 object PanierApi {

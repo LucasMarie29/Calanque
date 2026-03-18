@@ -11,13 +11,13 @@ okhttp = "4.11.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.10.1"
 composeBom = "2024.09.00"
-retrofit = "2.9.0"
 navigationCompose = "2.7.7"
 navigationCommonAndroid = "2.9.7"
 engageCore = "1.5.11"
+navigationComposeJvmstubs = "2.9.7"
+retrofit = "2.11.0"
 androidxLifecycle = "2.8.7"
 coil = "2.6.0"
-navigationComposeJvmstubs = "2.9.7"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -39,6 +39,7 @@ retrofit-converter-scalars = { group = "com.squareup.retrofit2", name = "convert
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-navigation-common-android = { group = "androidx.navigation", name = "navigation-common-android", version.ref = "navigationCommonAndroid" }
 engage-core = { group = "com.google.android.engage", name = "engage-core", version.ref = "engageCore" }
+androidx-navigation-compose-jvmstubs = { group = "androidx.navigation", name = "navigation-compose-jvmstubs", version.ref = "navigationComposeJvmstubs" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 retrofit-serialization-converter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofit-serialization-converter" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
