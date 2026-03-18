@@ -108,7 +108,7 @@ class ActivitiesViewModel : ViewModel() {
 @Composable
 fun HomeScreen(
     viewModel: ActivitiesViewModel = viewModel(),
-    onActivityTypeClick: (ActivityType) -> Unit = {}
+    onNavigate: () -> Unit
 ) {
     Scaffold(
         containerColor = CalanquesTheme.Background
@@ -142,7 +142,7 @@ fun HomeScreen(
                 viewModel.activities.isEmpty() -> EmptyState()
                 else -> ActivityTypeList(
                     activities = viewModel.activities,
-                    onItemClick = onActivityTypeClick
+                    onItemClick = { onNavigate() }
                 )
             }
         }

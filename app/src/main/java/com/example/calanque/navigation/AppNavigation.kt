@@ -17,19 +17,18 @@ import com.example.calanque.screens.AccountScreen
 import com.example.calanque.screens.PanierScreen
 import com.example.calanque.screens.CarteScreen
 import com.example.calanque.screens.HomeScreen
-import com.example.calanque.screens.MyActivitiesListScreen // ✨ N'oublie pas cet import !
+import com.example.calanque.screens.MyActivitiesListScreen
 
 sealed class Screen(
     val route: String,
     val label: String,
     val iconRes: Int
 ) {
-    object Accueil : Screen("accueil", "Accueil", R.drawable.baseline_home_48)
-    object Panier : Screen("panier", "Panier", R.drawable.baseline_shopping_basket_48)
-    object Compte : Screen("compte", "Compte", R.drawable.baseline_person_48)
-    object Carte : Screen("carte", "Carte", R.drawable.baseline_map_48)
+    object Accueil : Screen("accueil", "Accueil", R.drawable.baseline_home_32)
+    object Panier : Screen("panier", "Panier", R.drawable.baseline_shopping_basket_32)
+    object Compte : Screen("compte", "Compte", R.drawable.baseline_person_32)
+    object Carte : Screen("carte", "Carte", R.drawable.baseline_map_32)
 
-    // Cette route servira pour afficher la liste des activités
     object Activities : Screen("activities", "Activités", 0)
 }
 
