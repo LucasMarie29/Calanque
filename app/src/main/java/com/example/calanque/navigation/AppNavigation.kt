@@ -24,10 +24,10 @@ sealed class Screen(
     val label:   String,
     val iconRes: Int
 ) {
-    object Accueil : Screen("accueil", "Accueil", R.drawable.baseline_home_48)
-    object Panier    : Screen("panier",    "Panier",    R.drawable.baseline_shopping_basket_48)
-    object Compte    : Screen("compte",    "Compte",    R.drawable.baseline_person_48)
-    object Carte     : Screen("carte",     "Carte",     R.drawable.baseline_map_48)
+    object Accueil : Screen("accueil", "Accueil", R.drawable.baseline_home_32)
+    object Panier    : Screen("panier",    "Panier",    R.drawable.baseline_shopping_basket_32)
+    object Compte    : Screen("compte",    "Compte",    R.drawable.baseline_person_32)
+    object Carte     : Screen("carte",     "Carte",     R.drawable.baseline_map_32)
 }
 
 val bottomNavItems = listOf(
