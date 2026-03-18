@@ -30,6 +30,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.http.GET
 import com.example.calanque.R
+
 import androidx.compose.foundation.Image
 
 // ─────────────────────────────────────────────
