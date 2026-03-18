@@ -35,8 +35,8 @@ data class Activity(
     val duree: String? = null,
     @SerialName("tarif")
     val prix: Double = 0.0,
-    @SerialName("photo")
-    val image: String? = null
+    @SerialName("image_url")
+    val image_url: String?
 )
 
 // 2. L'interface avec le bon nom
@@ -109,7 +109,7 @@ fun MyActivitiesListScreen(viewModel: ActivitiesModel = viewModel()) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             AsyncImage(
-                                model = "http://webngo.sio.bts:8001/img/activites/${activity.image ?: ""}",
+                                model = "http://webngo.sio.bts:8001/${activity.image_url}",
                                 contentDescription = activity.nom,
                                 modifier = Modifier.size(80.dp),
                                 contentScale = ContentScale.Crop,
