@@ -18,13 +18,15 @@ import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.http.Body
+import retrofit2.http.Field
+import retrofit2.http.FormUrlEncoded
 import retrofit2.http.POST
 
 // 1. Modèles de données pour l'Authentification
 @Serializable
 data class LoginRequest(
     val email: String,
-    val mot_de_passe: String
+    val password: String
 )
 
 @Serializable
@@ -47,8 +49,12 @@ data class ErrorDetail(
 
 // 2. Interface API
 interface AuthApiService {
+    @FormUrlEncoded
     @POST("api/auth/login")
-    suspend fun login(@Body request: LoginRequest): AuthResponse
+    suspend fun login(
+        @Field("username") email: String,
+        @Field("password") motDePasse: String
+    ): AuthResponse
 }
 
 // 3. ViewModel pour gérer la logique de connexion
@@ -78,12 +84,15 @@ class AuthViewModel : ViewModel() {
             isLoading = true
             errorMessage = null
             try {
-                val response = service.login(LoginRequest(email, password))
+                // On envoie les deux strings directement
+                val response = service.login(email, password)
                 token = response.access_token
-                // Ici, tu pourrais naviguer vers l'écran Panier
+            } catch (e: retrofit2.HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                android.util.Log.e("DEBUG_LOGIN", "Le serveur dit : $errorBody")
+                errorMessage = "Identifiants incorrects (422)"
             } catch (e: Exception) {
-                // Gestion simplifiée de l'erreur 401 ou 422
-                errorMessage = "Identifiants incorrects ou erreur serveur"
+                errorMessage = "Erreur de connexion"
                 e.printStackTrace()
             } finally {
                 isLoading = false
@@ -94,7 +103,8 @@ class AuthViewModel : ViewModel() {
 
 // 4. L'écran (UI)
 @Composable
-fun AuthScreen(viewModel: AuthViewModel = viewModel()) {
+fun AuthScreen(onNavigateToSignup: () -> Unit,
+               viewModel: AuthViewModel = viewModel()) {
     Scaffold { paddingValues ->
         Column(
             modifier = Modifier
@@ -140,6 +150,9 @@ fun AuthScreen(viewModel: AuthViewModel = viewModel()) {
                 ) {
                     Text("Se connecter")
                 }
+            }
+            TextButton(onClick = { onNavigateToSignup() }) {
+                Text("Pas encore de compte ? S'inscrire")
             }
 
             viewModel.errorMessage?.let {

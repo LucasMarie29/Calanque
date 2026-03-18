@@ -18,6 +18,8 @@ import com.example.calanque.screens.CarteScreen
 import androidx.compose.foundation.layout.padding
 import com.example.calanque.screens.HomeScreen
 import com.example.calanque.screens.PanierScreen
+import com.example.calanque.screens.AuthScreen
+import com.example.calanque.screens.SignupScreen
 
 sealed class Screen(
     val route:   String,
@@ -28,6 +30,8 @@ sealed class Screen(
     object Panier    : Screen("panier",    "Panier",    R.drawable.baseline_shopping_basket_48)
     object Compte    : Screen("compte",    "Compte",    R.drawable.baseline_person_48)
     object Carte     : Screen("carte",     "Carte",     R.drawable.baseline_map_48)
+    object Auth : Screen("auth", "Connexion", R.drawable.baseline_person_48)
+    object Signup  : Screen("signup",  "Inscription", R.drawable.baseline_person_48)
 }
 
 val bottomNavItems = listOf(
@@ -80,8 +84,14 @@ fun AppNavigation() {
         ) {
             composable(Screen.Accueil.route) { HomeScreen() }
             composable(Screen.Panier.route)    { PanierScreen() }
-            composable(Screen.Compte.route)    { AccountScreen() }
-            composable(Screen.Carte.route)     { CarteScreen() }
+            composable(Screen.Compte.route) { AccountScreen(onNavigateToAuth = { navController.navigate(Screen.Auth.route) }) }
+            composable(Screen.Carte.route) { CarteScreen() }
+            composable(Screen.Auth.route) {
+                AuthScreen(onNavigateToSignup = { navController.navigate(Screen.Signup.route) })
+            }
+            composable(Screen.Signup.route) {
+                SignupScreen(onNavigateBack = { navController.popBackStack() })
+            }
         }
     }
 }
