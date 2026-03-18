@@ -1,24 +1,11 @@
 package com.example.calanque.screens
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -36,6 +23,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.http.GET
 import com.example.calanque.R
+import androidx.compose.material3.CardDefaults
+
 @Serializable
 data class ActivityType(
     val id: Int,
@@ -45,10 +34,10 @@ data class ActivityType(
 
 interface MyApiService {
     @GET("api/activity-types/")
-    suspend fun getActivities(): List<ActivityType>
+    suspend fun getActivityTypes(): List<ActivityType>
 }
 
-class ActivitiesViewModel : ViewModel() {
+class HomeViewModel : ViewModel() {
     var activities by mutableStateOf<List<ActivityType>>(emptyList())
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
@@ -66,10 +55,9 @@ class ActivitiesViewModel : ViewModel() {
         viewModelScope.launch {
             isLoading = true
             try {
-                activities = service.getActivities()
+                activities = service.getActivityTypes()
             } catch (e: Exception) {
                 errorMessage = e.message
-                e.printStackTrace()
             } finally {
                 isLoading = false
             }
@@ -78,34 +66,33 @@ class ActivitiesViewModel : ViewModel() {
 }
 
 @Composable
-fun HomeScreen(viewModel: ActivitiesViewModel = viewModel()) {
+fun HomeScreen(
+    viewModel: HomeViewModel = viewModel(),
+    onNavigate: () -> Unit
+) {
     if (viewModel.isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
     } else {
-        viewModel.errorMessage?.let {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Erreur : $it", color = MaterialTheme.colorScheme.error)
-            }
-        }
-
         Column(modifier = Modifier.fillMaxSize()) {
             Image(
                 painter = painterResource(id = R.drawable.logobis),
-                contentDescription = "description",
+                contentDescription = "Logo",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp),
                 contentScale = ContentScale.Fit
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
             LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                 items(viewModel.activities) { activity ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        // La carte devient cliquable ici
+                        onClick = { onNavigate() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
                         Column {
@@ -117,12 +104,11 @@ fun HomeScreen(viewModel: ActivitiesViewModel = viewModel()) {
                                     .height(180.dp),
                                 contentScale = ContentScale.Crop
                             )
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = activity.libelle,
-                                    style = MaterialTheme.typography.headlineSmall
-                                )
-                            }
+                            Text(
+                                text = activity.libelle,
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.headlineSmall
+                            )
                         }
                     }
                 }
