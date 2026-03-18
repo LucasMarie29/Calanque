@@ -15,7 +15,6 @@ retrofit = "2.9.0"
 navigationCompose = "2.7.7"
 navigationCommonAndroid = "2.9.7"
 engageCore = "1.5.11"
-retrofit = "2.11.0"
 androidxLifecycle = "2.8.7"
 coil = "2.6.0"
 
@@ -42,7 +41,6 @@ engage-core = { group = "com.google.android.engage", name = "engage-core", versi
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 retrofit-serialization-converter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofit-serialization-converter" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
-retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "androidxLifecycle" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
