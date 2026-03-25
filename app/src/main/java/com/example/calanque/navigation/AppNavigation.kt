@@ -83,12 +83,36 @@ fun AppNavigation() {
             modifier         = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Accueil.route) { HomeScreen() }
-            composable(Screen.Panier.route)    { PanierScreen() }
-            composable(Screen.Compte.route) { AccountScreen(onNavigateToAuth = { navController.navigate(Screen.Auth.route) }) }
-            composable(Screen.Carte.route) { CarteScreen() }
-            composable(Screen.Auth.route) {
-                AuthScreen(onNavigateToSignup = { navController.navigate(Screen.Signup.route) })
+
+            composable(Screen.Panier.route)  { PanierScreen() }
+
+            composable(Screen.Compte.route) {
+                // On donne l'ID de la session. Si c'est null, on met 0 par sécurité.
+                AccountScreen(
+                    userId = UserSession.userId ?: 0,
+                    onNavigateToAuth = { navController.navigate(Screen.Auth.route) }
+                )
             }
+
+            composable(Screen.Carte.route) { CarteScreen() }
+
+            // --- LA CORRECTION EST ICI ---
+            composable(Screen.Auth.route) {
+                AuthScreen(
+                    onNavigateToSignup = {
+                        navController.navigate(Screen.Signup.route)
+                    },
+                    onLoginSuccess = {
+                        // On navigue vers le compte
+                        navController.navigate(Screen.Compte.route) {
+                            // On vide la pile pour éviter de revenir en arrière sur l'Auth
+                            popUpTo(Screen.Auth.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            // ------------------------------
+
             composable(Screen.Signup.route) {
                 SignupScreen(onNavigateBack = { navController.popBackStack() })
             }
