@@ -1,6 +1,8 @@
 package com.example.calanque.navigation
 
+import com.example.calanque.screens.CarteScreen
 import android.os.Build
+import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
@@ -19,7 +21,6 @@ import com.example.calanque.screens.AccountScreen
 import com.example.calanque.screens.ActivityDetailScreen
 
 import com.example.calanque.screens.PanierScreen
-import com.example.calanque.screens.CarteScreen
 import com.example.calanque.screens.HomeScreen
 import com.example.calanque.screens.AuthScreen
 import com.example.calanque.screens.SignupScreen

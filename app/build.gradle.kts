@@ -65,6 +65,6 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.coil.compose)
     implementation(libs.retrofit)
-
-
+    implementation(libs.osmdroid)
+    implementation("androidx.preference:preference-ktx:1.2.1")
 }
