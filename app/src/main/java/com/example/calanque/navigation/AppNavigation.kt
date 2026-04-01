@@ -71,8 +71,8 @@ fun AppNavigation() {
                                     saveState = true
                                 }
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             }
         }
