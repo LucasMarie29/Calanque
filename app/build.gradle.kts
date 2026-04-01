@@ -65,7 +65,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.coil.compose)
     implementation(libs.retrofit)
-    implementation(libs.osmdroid)
+    implementation(libs.osmdroid.android)
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("androidx.core:core-splashscreen:1.0.1")
 }
