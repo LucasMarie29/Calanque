@@ -4,7 +4,7 @@
 
     <style name="Theme.Calanque.SplashScreen" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#FFFFFF</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenAnimatedIcon">@android:drawable/ic_menu_report_image</item>
         <item name="postSplashScreenTheme">@style/Theme.Calanque</item>
     </style>
 </resources>
