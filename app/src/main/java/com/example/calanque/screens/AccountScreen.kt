@@ -3,7 +3,7 @@ package com.example.calanque.screens
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.* // Importe tout pour mutableStateOf et LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,9 +24,8 @@ import retrofit2.http.Path
 
 // 1. Interface API pour l'utilisateur
 interface AccountApiService {
-    @GET("api/users/{user_id}")
+    @GET("api/users/me")
     suspend fun getUser(
-        @Path("user_id") userId: Int,
         @Header("Authorization") token: String // <-- On ajoute l'en-tête ici
     ): User
 }
@@ -38,7 +37,7 @@ class AccountViewModel : ViewModel() {
     var errorMessage by mutableStateOf<String?>(null)
 
     private val retrofit = Retrofit.Builder()
-        .baseUrl("http://webngo.sio.bts:8001/") // Même URL que ton Panier
+        .baseUrl("http://webngo.sio.bts:8001/")
         .addConverterFactory(Json {
             ignoreUnknownKeys = true
             coerceInputValues = true
@@ -47,23 +46,21 @@ class AccountViewModel : ViewModel() {
 
     private val service = retrofit.create(AccountApiService::class.java)
 
-    fun fetchUser(userId: Int) {
+    fun fetchUser() {
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             try {
-                // On récupère le token depuis la session
                 val token = UserSession.token
-
-                if (token != null) {
-                    // On ajoute "Bearer " devant le token, c'est la norme standard
-                    Log.d("DEBUG_ACCOUNT", "Appel API avec ID: $userId et Token: ${UserSession.token}")
-                    user = service.getUser(userId, "Bearer $token")
+                if (!token.isNullOrBlank()) {
+                    // On appelle l'endpoint "me" avec le Bearer token
+                    user = service.getUser("Bearer $token")
                 } else {
-                    errorMessage = "Session expirée ou token manquant"
+                    errorMessage = "Vous n'êtes pas connecté (Token manquant)"
                 }
             } catch (e: Exception) {
-                errorMessage = "Erreur : ${e.localizedMessage}"
+                Log.e("ACCOUNT_ERROR", "Erreur API", e)
+                errorMessage = "Impossible de charger le profil : ${e.localizedMessage}"
             } finally {
                 isLoading = false
             }
@@ -73,54 +70,79 @@ class AccountViewModel : ViewModel() {
 
 // 3. L'écran UI
 @Composable
-fun AccountScreen(userId: Int, onNavigateToAuth: () -> Unit, viewModel: AccountViewModel = viewModel()) {
-
-    // On lance l'appel dès que l'ID change ou que l'écran s'affiche
-    LaunchedEffect(userId) {
-        viewModel.fetchUser(userId)
+fun AccountScreen(
+    onNavigateToAuth: () -> Unit,
+    viewModel: AccountViewModel = viewModel()
+) {
+    // On lance le chargement au premier affichage de l'écran
+    LaunchedEffect(Unit) {
+        viewModel.fetchUser()
     }
 
     Scaffold(
         topBar = {
-            Text("Mon Compte", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(16.dp))
+            Text(
+                "Mon Compte",
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp)) {
-            if (viewModel.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (viewModel.errorMessage != null) {
-                // CAS ERREUR : On affiche la VRAIE erreur pour comprendre ce qui cloche
-                Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Ici on affiche le vrai message d'erreur en rouge
-                    Text(text = viewModel.errorMessage!!, style = MaterialTheme.typography.bodyLarge, color = Color.Red)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onNavigateToAuth) {
-                        Text("Aller à la page de connexion")
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            when {
+                viewModel.isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                viewModel.errorMessage != null -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = viewModel.errorMessage!!,
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = onNavigateToAuth) {
+                            Text("Se connecter")
+                        }
                     }
                 }
-            } else if (viewModel.user == null) {
-                // CAS OU IL N'Y A PAS DE DONNÉES (ID par défaut qui ne marche pas)
-                Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "Erreur avec l'ID $userId : ${viewModel.errorMessage}", color = Color.Red)
-                    Button(onClick = onNavigateToAuth, modifier = Modifier.padding(top = 16.dp)) {
-                        Text("Se connecter")
-                    }
-                }
-            } else {
-                // CAS OU L'UTILISATEUR EST CHARGÉ
-                viewModel.user?.let { currentUser ->
+
+                viewModel.user != null -> {
+                    val currentUser = viewModel.user!!
                     Column(modifier = Modifier.fillMaxSize()) {
-                        Text(text = "${currentUser.prenom} ${currentUser.nom}", style = MaterialTheme.typography.headlineMedium)
+                        Text(
+                            text = "${currentUser.prenom} ${currentUser.nom}",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
                         AccountDetailRow("Email", currentUser.email)
-                        AccountDetailRow("Téléphone", currentUser.telephone)
-                        AccountDetailRow("Adresse", "${currentUser.adresse}\n${currentUser.cp} ${currentUser.ville}")
+                        AccountDetailRow("Téléphone", currentUser.telephone ?: "Non renseigné")
+                        AccountDetailRow(
+                            "Adresse",
+                            "${currentUser.adresse}\n${currentUser.cp} ${currentUser.ville}"
+                        )
 
                         Spacer(modifier = Modifier.weight(1f))
 
-                        // Ici le bouton devient "Se déconnecter"
-                        Button(onClick = onNavigateToAuth, modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = {
+                                // Logique de déconnexion : on vide le token
+                                UserSession.token = null
+                                onNavigateToAuth()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) {
                             Text("Se déconnecter")
                         }
                     }
