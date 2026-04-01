@@ -17,15 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.calanque.R
-import com.example.calanque.screens.AccountScreen
-import com.example.calanque.screens.ActivityDetailScreen
-
-import com.example.calanque.screens.PanierScreen
-import com.example.calanque.screens.HomeScreen
-import com.example.calanque.screens.AuthScreen
-import com.example.calanque.screens.SignupScreen
-import com.example.calanque.screens.MyActivitiesListScreen
-import com.example.calanque.screens.PanierScreen
+import com.example.calanque.screens.* // Import groupé pour plus de clarté
 
 sealed class Screen(
     val route:   String,
@@ -37,8 +29,7 @@ sealed class Screen(
     object Compte : Screen("compte", "Compte", R.drawable.baseline_person_32)
     object Carte : Screen("carte", "Carte", R.drawable.baseline_map_32)
     object Auth : Screen("auth", "Connexion", R.drawable.baseline_person_48)
-    object Signup  : Screen("signup",  "Inscription", R.drawable.baseline_person_48)
-
+    object Signup : Screen("signup", "Inscription", R.drawable.baseline_person_48)
     object Activities : Screen("activities", "Activités", 0)
 }
 
@@ -60,36 +51,24 @@ fun AppNavigation() {
 
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    val currentDestination = navBackStackEntry?.destination
-                    bottomNavItems.forEach { screen ->
-                        NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    painter            = painterResource(id = screen.iconRes),
-                                    contentDescription = screen.label
-                                )
-                            },
-                            label    = { Text(screen.label) },
-                            selected = currentDestination?.hierarchy?.any {
-                                it.route == screen.route
-                            } == true,
-                            onClick = {
-                                if (screen.route == Screen.Accueil.route) {
-                                    // Retour à l'accueil : vide toute la back stack
-                                    navController.navigate(Screen.Accueil.route) {
-                                        popUpTo(0) { inclusive = true }
-                                        launchSingleTop = true
-                                    }
-                                } else {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState    = true
-                                    }
+            NavigationBar {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentDestination = navBackStackEntry?.destination
+
+                bottomNavItems.forEach { screen ->
+                    NavigationBarItem(
+                        icon = {
+                            Icon(
+                                painter = painterResource(id = screen.iconRes),
+                                contentDescription = screen.label
+                            )
+                        },
+                        label = { Text(screen.label) },
+                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                        onClick = {
+                            navController.navigate(screen.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
                                 }
                             }
                         )
@@ -103,23 +82,50 @@ fun AppNavigation() {
             startDestination = Screen.Accueil.route,
             modifier         = Modifier.padding(innerPadding)
         ) {
-
-            composable(Screen.Panier.route)    { PanierScreen() }
-            composable(Screen.Compte.route) { AccountScreen(onNavigateToAuth = { navController.navigate(Screen.Auth.route) }) }
-            composable(Screen.Carte.route) { CarteScreen() }
-            composable(Screen.Auth.route) {
-                AuthScreen(onNavigateToSignup = { navController.navigate(Screen.Signup.route) })
-            }
-            composable(Screen.Signup.route) {
-                SignupScreen(onNavigateBack = { navController.popBackStack() })
-            }
-            // ✨ On passe l'action de navigation au HomeScreen
+            // --- ACCUEIL ---
             composable(Screen.Accueil.route) {
-                HomeScreen(
-                    onNavigate = { navController.navigate(Screen.Activities.route) }
+                HomeScreen(onNavigate = {
+                    navController.navigate(Screen.Activities.route)
+                })
+            }
+
+            // --- PANIER ---
+            composable(Screen.Panier.route) { PanierScreen() }
+
+            // --- COMPTE (CORRIGÉ) ---
+            composable(Screen.Compte.route) {
+                // On ne passe plus d'ID utilisateur !
+                // AccountScreen se débrouillera avec le token via /api/users/me
+                AccountScreen(
+                    onNavigateToAuth = {
+                        navController.navigate(Screen.Auth.route)
+                    }
                 )
             }
 
+            // --- CARTE ---
+            composable(Screen.Carte.route) { CarteScreen() }
+
+            // --- CONNEXION ---
+            composable(Screen.Auth.route) {
+                AuthScreen(
+                    onNavigateToSignup = {
+                        navController.navigate(Screen.Signup.route)
+                    },
+                    onLoginSuccess = {
+                        navController.navigate(Screen.Compte.route) {
+                            popUpTo(Screen.Auth.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // --- INSCRIPTION ---
+            composable(Screen.Signup.route) {
+                SignupScreen(onNavigateBack = { navController.popBackStack() })
+            }
+
+            // --- LISTE DES ACTIVITÉS ---
             composable(Screen.Activities.route) {
                 MyActivitiesListScreen(
                     onActivityClick = { activityId ->
@@ -138,7 +144,6 @@ fun AppNavigation() {
                     onBack     = { navController.popBackStack() }
                 )
             }
-
         }
     }
 }
