@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.calanque.navigation.UserSession
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -32,7 +33,8 @@ data class LoginRequest(
 @Serializable
 data class AuthResponse(
     val access_token: String,
-    val token_type: String
+    val token_type: String,
+    val user_id: Int? = null
 )
 
 // Modèle pour gérer les erreurs détaillées de ton API (FastAPI)
@@ -78,7 +80,9 @@ class AuthViewModel : ViewModel() {
         if (email.isBlank() || password.isBlank()) {
             errorMessage = "Veuillez remplir tous les champs"
             return
+
         }
+
 
         viewModelScope.launch {
             isLoading = true
@@ -87,6 +91,8 @@ class AuthViewModel : ViewModel() {
                 // On envoie les deux strings directement
                 val response = service.login(email, password)
                 token = response.access_token
+                UserSession.token = response.access_token
+                UserSession.userId = response.user_id
             } catch (e: retrofit2.HttpException) {
                 val errorBody = e.response()?.errorBody()?.string()
                 android.util.Log.e("DEBUG_LOGIN", "Le serveur dit : $errorBody")
@@ -104,7 +110,13 @@ class AuthViewModel : ViewModel() {
 // 4. L'écran (UI)
 @Composable
 fun AuthScreen(onNavigateToSignup: () -> Unit,
+               onLoginSuccess: () -> Unit,
                viewModel: AuthViewModel = viewModel()) {
+    LaunchedEffect(viewModel.token) {
+        if (viewModel.token != null) {
+            onLoginSuccess()
+        }
+    }
     Scaffold { paddingValues ->
         Column(
             modifier = Modifier
