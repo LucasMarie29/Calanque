@@ -29,6 +29,9 @@ Application mobile Android développée avec **Jetpack Compose** permettant de d
 
 ## 📁 Structure du Projet
 
+## Github projet : 
+## https://github.com/LucasMarie29/Calanque
+
 ```text
 com.example.calanque
 ├── cart/               # Logique de gestion du panier (CartManager, CartItem)
