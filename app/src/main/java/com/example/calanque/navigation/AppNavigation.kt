@@ -1,5 +1,9 @@
 package com.example.calanque.navigation
 
+import com.example.calanque.screens.CarteScreen
+import android.os.Build
+import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -16,8 +20,8 @@ import com.example.calanque.R
 import com.example.calanque.screens.* // Import groupé pour plus de clarté
 
 sealed class Screen(
-    val route: String,
-    val label: String,
+    val route:   String,
+    val label:   String,
     val iconRes: Int
 ) {
     object Accueil : Screen("accueil", "Accueil", R.drawable.baseline_home_32)
@@ -36,9 +40,14 @@ val bottomNavItems = listOf(
     Screen.Carte
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    val showBottomBar = currentRoute?.startsWith("activity_detail") == false
 
     Scaffold(
         bottomBar = {
@@ -61,19 +70,17 @@ fun AppNavigation() {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
     ) { innerPadding ->
         NavHost(
-            navController = navController,
+            navController    = navController,
             startDestination = Screen.Accueil.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier         = Modifier.padding(innerPadding)
         ) {
             // --- ACCUEIL ---
             composable(Screen.Accueil.route) {
@@ -120,7 +127,22 @@ fun AppNavigation() {
 
             // --- LISTE DES ACTIVITÉS ---
             composable(Screen.Activities.route) {
-                MyActivitiesListScreen()
+                MyActivitiesListScreen(
+                    onActivityClick = { activityId ->
+                        navController.navigate("activity_detail/$activityId")
+                    }
+                )
+            }
+
+            composable("activity_detail/{activityId}") { backStackEntry ->
+                val activityId = backStackEntry.arguments
+                    ?.getString("activityId")
+                    ?.toIntOrNull() ?: return@composable
+
+                ActivityDetailScreen(
+                    activityId = activityId,
+                    onBack     = { navController.popBackStack() }
+                )
             }
         }
     }

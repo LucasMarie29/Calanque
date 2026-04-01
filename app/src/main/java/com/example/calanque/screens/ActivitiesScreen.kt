@@ -1,6 +1,5 @@
 package com.example.calanque.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,30 +17,28 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.http.GET
-import com.example.calanque.R
-import kotlinx.serialization.SerialName
 import com.example.calanque.models.Activity
 
-// 2. L'interface avec le bon nom
 interface ActivitiesService {
     @GET("api/activities")
     suspend fun getActivities(): List<Activity>
 }
 
-// 3. Le ViewModel corrigé
 class ActivitiesModel : ViewModel() {
-    var activities by mutableStateOf<List<Activity>>(emptyList())
-    var isLoading by mutableStateOf(false)
+    var activities   by mutableStateOf<List<Activity>>(emptyList())
+    var isLoading    by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
 
     private val retrofit = Retrofit.Builder()
         .baseUrl("http://webngo.sio.bts:8001/")
-        .addConverterFactory(Json { ignoreUnknownKeys = true }.asConverterFactory("application/json".toMediaType()))
+        .addConverterFactory(
+            Json { ignoreUnknownKeys = true }
+                .asConverterFactory("application/json".toMediaType())
+        )
         .build()
 
     private val service = retrofit.create(ActivitiesService::class.java)
@@ -63,9 +60,11 @@ class ActivitiesModel : ViewModel() {
     }
 }
 
-// 4. L'écran renommé pour éviter le conflit "Conflicting overloads"
 @Composable
-fun MyActivitiesListScreen(viewModel: ActivitiesModel = viewModel()) {
+fun MyActivitiesListScreen(
+    viewModel: ActivitiesModel = viewModel(),
+    onActivityClick: (Int) -> Unit = {}   // ← id de l'activité cliquée
+) {
     if (viewModel.isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
@@ -78,44 +77,46 @@ fun MyActivitiesListScreen(viewModel: ActivitiesModel = viewModel()) {
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
-
             Text(
-                text = "Activités Disponibles",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(16.dp),
+                text       = "Activités Disponibles",
+                style      = MaterialTheme.typography.headlineMedium,
+                modifier   = Modifier.padding(16.dp),
                 fontWeight = FontWeight.Bold
             )
 
             LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
                 items(viewModel.activities) { activity ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        elevation = CardDefaults.cardElevation(4.dp)
+                        modifier  = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        onClick   = { onActivityClick(activity.id) }  // ← clic
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier          = Modifier.padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             AsyncImage(
-                                model = "http://webngo.sio.bts:8001/${activity.image_url}",
+                                model              = "http://webngo.sio.bts:8001/${activity.image_url}",
                                 contentDescription = activity.nom,
-                                modifier = Modifier.size(80.dp),
-                                contentScale = ContentScale.Crop,
-                                error = painterResource(android.R.drawable.ic_dialog_alert)
+                                modifier           = Modifier.size(80.dp),
+                                contentScale       = ContentScale.Crop,
+                                error              = painterResource(android.R.drawable.ic_dialog_alert)
                             )
-
                             Column(modifier = Modifier.padding(start = 16.dp)) {
                                 Text(
-                                    text = activity.nom,
-                                    style = MaterialTheme.typography.titleLarge,
+                                    text       = activity.nom,
+                                    style      = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row {
-                                    val dureeAffichee = activity.duree?.substringBeforeLast(":") ?: "N/A"
-                                    Text(text = "Durée: ${dureeAffichee}h")
+                                    val dureeAffichee = activity.duree
+                                        ?.substringBeforeLast(":") ?: "N/A"
+                                    Text(text = "Durée : ${dureeAffichee}h")
                                     Spacer(modifier = Modifier.width(16.dp))
-                                    Text(text = "Prix: ${activity.prix}€")
+                                    Text(text = "Prix : ${activity.prix}€")
                                 }
                             }
                         }
