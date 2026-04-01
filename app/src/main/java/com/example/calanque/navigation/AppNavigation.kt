@@ -130,7 +130,8 @@ fun AppNavigation() {
                 MyActivitiesListScreen(
                     onActivityClick = { activityId ->
                         navController.navigate("activity_detail/$activityId")
-                    }
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
