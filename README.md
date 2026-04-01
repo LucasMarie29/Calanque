@@ -1,7 +1,7 @@
 # 🌊 Application Calanques de Marseille
 
 Application mobile Android développée avec **Jetpack Compose** permettant de découvrir et de réserver des activités dans les calanques de Marseille. Ce projet a été réalisé dans le cadre du cursus **BTS SIO (SLAM)**.
-**Par VILAIN Alexandre, ABOUTAYA Yahya, MARIE Lucas**
+### **Par VILAIN Alexandre, ABOUTAYA Yahya, MARIE Lucas**
 ## 🚀 Fonctionnalités
 
 ### 📍 Exploration
