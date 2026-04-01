@@ -28,6 +28,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.calanque.cart.CartItem
+import com.example.calanque.cart.CartManager
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -40,7 +42,7 @@ import com.example.calanque.R
 import java.time.format.DateTimeFormatter
 
 // ─────────────────────────────────────────────
-// Models (inchangés)
+// Models
 // ─────────────────────────────────────────────
 @Serializable
 data class Activity(
@@ -66,7 +68,7 @@ data class Availability(
 )
 
 // ─────────────────────────────────────────────
-// API (inchangé)
+// API
 // ─────────────────────────────────────────────
 interface ActivityApiService {
     @GET("api/activities/{id}")
@@ -77,7 +79,7 @@ interface ActivityApiService {
 }
 
 // ─────────────────────────────────────────────
-// ViewModel (inchangé)
+// ViewModel
 // ─────────────────────────────────────────────
 class ActivityDetailViewModel : ViewModel() {
     var activity     by mutableStateOf<Activity?>(null)
@@ -113,7 +115,9 @@ class ActivityDetailViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 availability = service.getAvailability(activityId)
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                errorMessage = e.message
+            }
         }
     }
 }
@@ -127,7 +131,7 @@ class ActivityDetailViewModel : ViewModel() {
 fun ActivityDetailScreen(
     activityId: Int,
     onBack: () -> Unit = {},
-    onAddToCart: (activity: Activity, date: String, heure: String, participants: Int) -> Unit = { _, _, _, _ -> },
+    onGoToCart: () -> Unit = {},          // navigation vers le panier après ajout
     viewModel: ActivityDetailViewModel = viewModel()
 ) {
     LaunchedEffect(activityId) { viewModel.load(activityId) }
@@ -136,7 +140,9 @@ fun ActivityDetailScreen(
     var selectedHeure   by remember { mutableStateOf("") }
     var participants    by remember { mutableIntStateOf(1) }
     var showDatePicker  by remember { mutableStateOf(false) }
+    var addedToCart     by remember { mutableStateOf(false) }   // snackbar feedback
     val datePickerState = rememberDatePickerState()
+    val snackbarHost    = remember { SnackbarHostState() }
 
     val frFormatter  = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     val isoFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -146,10 +152,18 @@ fun ActivityDetailScreen(
     val placesRestantes = selectedSlot?.places_restantes ?: 14
     val prixTotal       = (viewModel.activity?.tarif ?: 0.0) * participants
 
+    // Affiche le snackbar après ajout
+    LaunchedEffect(addedToCart) {
+        if (addedToCart) {
+            snackbarHost.showSnackbar("Activité ajoutée au panier !")
+            addedToCart = false
+        }
+    }
+
     Scaffold(
         containerColor = CalanquesTheme.Background,
+        snackbarHost   = { SnackbarHost(snackbarHost) },
         topBar = {
-            // ── TopBar — fond blanc, barre rouge en bas ──
             Box(
                 modifier = Modifier
                     .shadow(elevation = 2.dp, spotColor = CalanquesTheme.BlackAlpha12)
@@ -175,11 +189,37 @@ fun ActivityDetailScreen(
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
+                    actions = {
+                        // Badge panier dans la TopBar
+                        val cartCount = CartManager.items.size
+                        Box(modifier = Modifier.padding(end = 12.dp)) {
+                            IconButton(onClick = onGoToCart) {
+                                Icon(
+                                    painter            = painterResource(android.R.drawable.ic_menu_agenda),
+                                    contentDescription = "Panier",
+                                    tint               = CalanquesTheme.Blue
+                                )
+                            }
+                            if (cartCount > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .background(CalanquesTheme.Red, RoundedCornerShape(8.dp))
+                                        .align(Alignment.TopEnd),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text     = cartCount.toString(),
+                                        fontSize = 9.sp,
+                                        color    = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
-                // Barre rouge identitaire en bas de la TopBar
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -192,22 +232,11 @@ fun ActivityDetailScreen(
     ) { innerPadding ->
 
         if (viewModel.isLoading) {
-            Box(
-                Modifier.fillMaxSize().padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(
-                        color       = CalanquesTheme.Blue,
-                        strokeWidth = 2.5.dp
-                    )
+                    CircularProgressIndicator(color = CalanquesTheme.Blue, strokeWidth = 2.5.dp)
                     Spacer(Modifier.height(12.dp))
-                    Text(
-                        "Chargement…",
-                        fontSize   = 13.sp,
-                        fontFamily = CalanquesTheme.CalibriFamily,
-                        color      = CalanquesTheme.Grey
-                    )
+                    Text("Chargement…", fontSize = 13.sp, fontFamily = CalanquesTheme.CalibriFamily, color = CalanquesTheme.Grey)
                 }
             }
             return@Scaffold
@@ -236,17 +265,12 @@ fun ActivityDetailScreen(
                         contentScale       = ContentScale.Crop,
                         error              = painterResource(android.R.drawable.ic_menu_gallery)
                     )
-                    // Dégradé bas pour lisibilité
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(80.dp)
                             .align(Alignment.BottomStart)
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color(0x66000000))
-                                )
-                            )
+                            .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0x66000000))))
                     )
                 } else {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -260,21 +284,12 @@ fun ActivityDetailScreen(
                 }
             }
 
-            // ── Barre rouge identitaire ───────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .background(CalanquesTheme.Red)
-            )
+            Box(modifier = Modifier.fillMaxWidth().height(3.dp).background(CalanquesTheme.Red))
 
             Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
 
-                // ── Description + durée ───────────────────
-                Row(
-                    modifier          = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top
-                ) {
+                // ── Description + badge durée ─────────────
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                     Text(
                         text       = act.description,
                         fontSize   = 14.sp,
@@ -284,7 +299,6 @@ fun ActivityDetailScreen(
                         modifier   = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(14.dp))
-                    // Badge durée
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier          = Modifier
@@ -310,10 +324,7 @@ fun ActivityDetailScreen(
                 }
 
                 Spacer(Modifier.height(22.dp))
-
-                // ── Label section ─────────────────────────
                 SectionLabel("RÉSERVATION")
-
                 Spacer(Modifier.height(12.dp))
 
                 // ── Sélecteur de date ─────────────────────
@@ -321,99 +332,67 @@ fun ActivityDetailScreen(
                     value         = selectedDate,
                     onValueChange = {},
                     readOnly      = true,
+                    label         = { Text("Date", fontFamily = CalanquesTheme.CalibriFamily, fontSize = 12.sp) },
                     placeholder   = {
-                        Text(
-                            "Sélectionner une date",
-                            fontSize   = 14.sp,
-                            fontFamily = CalanquesTheme.CalibriFamily,
-                            color      = CalanquesTheme.LightGrey
-                        )
+                        Text("Sélectionner une date", fontSize = 14.sp,
+                            fontFamily = CalanquesTheme.CalibriFamily, color = CalanquesTheme.LightGrey)
                     },
                     trailingIcon  = {
                         IconButton(onClick = { showDatePicker = true }) {
-                            Icon(
-                                painter            = painterResource(android.R.drawable.ic_menu_today),
-                                contentDescription = "Calendrier",
-                                tint               = CalanquesTheme.Blue
-                            )
+                            Icon(painterResource(android.R.drawable.ic_menu_today), "Calendrier", tint = CalanquesTheme.Blue)
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showDatePicker = true },
-                    shape  = RoundedCornerShape(8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
+                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                    shape    = RoundedCornerShape(8.dp),
+                    colors   = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = CalanquesTheme.LightGrey,
-                        focusedBorderColor   = CalanquesTheme.Blue,
-                        unfocusedTextColor   = CalanquesTheme.Black,
-                        focusedTextColor     = CalanquesTheme.Black
+                        focusedBorderColor   = CalanquesTheme.Blue
                     ),
-                    textStyle = LocalTextStyle.current.copy(
-                        fontFamily = CalanquesTheme.CalibriFamily,
-                        fontSize   = 14.sp
-                    )
+                    textStyle = LocalTextStyle.current.copy(fontFamily = CalanquesTheme.CalibriFamily, fontSize = 14.sp)
                 )
 
                 Spacer(Modifier.height(10.dp))
 
-                // ── Créneaux horaires ─────────────────────
-                if (selectedDate.isNotEmpty() && slots.isNotEmpty()) {
-                    SlotSelector(
-                        slots           = slots,
-                        selectedHeure   = selectedHeure,
-                        onHeureSelected = { selectedHeure = it }
-                    )
-                } else if (selectedDate.isNotEmpty()) {
-                    OutlinedTextField(
-                        value         = selectedHeure,
-                        onValueChange = { selectedHeure = it },
-                        readOnly      = false,
-                        placeholder   = {
-                            Text(
-                                "Ex : 09:00",
-                                fontSize   = 14.sp,
-                                fontFamily = CalanquesTheme.CalibriFamily,
-                                color      = CalanquesTheme.LightGrey
-                            )
-                        },
-                        trailingIcon  = {
-                            Icon(
-                                painter            = painterResource(android.R.drawable.ic_menu_today),
-                                contentDescription = "Heure",
-                                tint               = CalanquesTheme.Blue
-                            )
-                        },
-                        modifier  = Modifier.fillMaxWidth(),
-                        shape     = RoundedCornerShape(8.dp),
-                        colors    = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = CalanquesTheme.LightGrey,
-                            focusedBorderColor   = CalanquesTheme.Blue
-                        ),
-                        textStyle = LocalTextStyle.current.copy(
-                            fontFamily = CalanquesTheme.CalibriFamily,
-                            fontSize   = 14.sp
+                // ── Créneaux ou saisie heure ──────────────
+                if (selectedDate.isNotEmpty()) {
+                    if (slots.isNotEmpty()) {
+                        SlotSelector(
+                            slots           = slots,
+                            selectedHeure   = selectedHeure,
+                            onHeureSelected = { selectedHeure = it }
                         )
-                    )
+                    } else {
+                        OutlinedTextField(
+                            value         = selectedHeure,
+                            onValueChange = { selectedHeure = it },
+                            label         = { Text("Heure", fontFamily = CalanquesTheme.CalibriFamily, fontSize = 12.sp) },
+                            placeholder   = {
+                                Text("Ex : 09:00", fontSize = 14.sp,
+                                    fontFamily = CalanquesTheme.CalibriFamily, color = CalanquesTheme.LightGrey)
+                            },
+                            modifier  = Modifier.fillMaxWidth(),
+                            shape     = RoundedCornerShape(8.dp),
+                            colors    = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = CalanquesTheme.LightGrey,
+                                focusedBorderColor   = CalanquesTheme.Blue
+                            ),
+                            textStyle = LocalTextStyle.current.copy(fontFamily = CalanquesTheme.CalibriFamily, fontSize = 14.sp)
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(22.dp))
-
-                // ── Label section ─────────────────────────
                 SectionLabel("DÉTAILS")
-
                 Spacer(Modifier.height(12.dp))
 
-                // ── Chips tarif / places / participants ───
+                // ── Chips tarif / places / compteur ───────
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     InfoChip(icon = "€", value = "${act.tarif.toInt()} / pers.")
-                    InfoChip(
-                        iconRes = android.R.drawable.ic_menu_myplaces,
-                        value   = "$placesRestantes places"
-                    )
+                    InfoChip(iconRes = android.R.drawable.ic_menu_myplaces, value = "$placesRestantes places")
                     ParticipantCounter(
                         value   = participants,
                         onMinus = { if (participants > 1) participants-- },
@@ -425,20 +404,15 @@ fun ActivityDetailScreen(
 
                 // ── Prix total ────────────────────────────
                 Row(
-                    modifier          = Modifier
+                    modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
                         .background(CalanquesTheme.Blue.copy(alpha = 0.07f))
                         .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text       = "Total",
-                        fontSize   = 14.sp,
-                        fontFamily = CalanquesTheme.CalibriFamily,
-                        color      = CalanquesTheme.Grey
-                    )
+                    Text("Total", fontSize = 14.sp, fontFamily = CalanquesTheme.CalibriFamily, color = CalanquesTheme.Grey)
                     Text(
                         text       = "${prixTotal.toInt()} €",
                         fontSize   = 18.sp,
@@ -454,31 +428,47 @@ fun ActivityDetailScreen(
                 val canAdd = selectedDate.isNotEmpty() && selectedHeure.isNotEmpty()
 
                 Button(
-                    onClick  = { if (canAdd) onAddToCart(act, selectedDate, selectedHeure, participants) },
+                    onClick = {
+                        if (canAdd) {
+                            CartManager.add(
+                                CartItem(
+                                    activity     = act,
+                                    date         = selectedDate,
+                                    heure        = selectedHeure,
+                                    participants = participants
+                                )
+                            )
+                            addedToCart = true
+                        }
+                    },
                     enabled  = canAdd,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape  = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape    = RoundedCornerShape(10.dp),
+                    colors   = ButtonDefaults.buttonColors(
                         containerColor         = CalanquesTheme.Red,
                         disabledContainerColor = CalanquesTheme.LightGrey
                     )
                 ) {
-                    Icon(
-                        painter            = painterResource(android.R.drawable.ic_menu_add),
-                        contentDescription = null,
-                        tint               = Color.White,
-                        modifier           = Modifier.size(20.dp)
-                    )
+                    Icon(painterResource(android.R.drawable.ic_menu_add), null, tint = Color.White, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(
-                        text       = "Ajouter au panier",
-                        fontSize   = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = CalanquesTheme.CalibriFamily,
-                        color      = Color.White
-                    )
+                    Text("Ajouter au panier", fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                        fontFamily = CalanquesTheme.CalibriFamily, color = Color.White)
+                }
+
+                // ── Lien vers le panier si déjà des items ─
+                if (CartManager.items.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    TextButton(
+                        onClick  = onGoToCart,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text       = "Voir le panier (${CartManager.items.size} activité${if (CartManager.items.size > 1) "s" else ""})",
+                            color      = CalanquesTheme.Blue,
+                            fontFamily = CalanquesTheme.CalibriFamily,
+                            fontSize   = 13.sp
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -502,63 +492,34 @@ fun ActivityDetailScreen(
                         }
                         showDatePicker = false
                     }) {
-                        Text(
-                            "OK",
-                            color      = CalanquesTheme.Blue,
-                            fontFamily = CalanquesTheme.CalibriFamily,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text("OK", color = CalanquesTheme.Blue, fontFamily = CalanquesTheme.CalibriFamily, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDatePicker = false }) {
-                        Text(
-                            "Annuler",
-                            color      = CalanquesTheme.Grey,
-                            fontFamily = CalanquesTheme.CalibriFamily
-                        )
+                        Text("Annuler", color = CalanquesTheme.Grey, fontFamily = CalanquesTheme.CalibriFamily)
                     }
                 }
-            ) {
-                DatePicker(state = datePickerState)
-            }
+            ) { DatePicker(state = datePickerState) }
         }
     }
 }
 
 // ─────────────────────────────────────────────
-// Label de section (trait rouge + texte Calibri)
+// Composants partagés
 // ─────────────────────────────────────────────
 @Composable
 fun SectionLabel(text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .width(3.dp)
-                .height(13.dp)
-                .background(CalanquesTheme.Red, RoundedCornerShape(2.dp))
-        )
+        Box(modifier = Modifier.width(3.dp).height(13.dp).background(CalanquesTheme.Red, RoundedCornerShape(2.dp)))
         Spacer(Modifier.width(8.dp))
-        Text(
-            text          = text,
-            fontSize      = 11.sp,
-            fontWeight    = FontWeight.Bold,
-            fontFamily    = CalanquesTheme.CalibriFamily,
-            color         = CalanquesTheme.Grey,
-            letterSpacing = 2.sp
-        )
+        Text(text = text, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+            fontFamily = CalanquesTheme.CalibriFamily, color = CalanquesTheme.Grey, letterSpacing = 2.sp)
     }
 }
 
-// ─────────────────────────────────────────────
-// Sélecteur de créneaux horaires
-// ─────────────────────────────────────────────
 @Composable
-fun SlotSelector(
-    slots: List<AvailabilitySlot>,
-    selectedHeure: String,
-    onHeureSelected: (String) -> Unit
-) {
+fun SlotSelector(slots: List<AvailabilitySlot>, selectedHeure: String, onHeureSelected: (String) -> Unit) {
     Column {
         SectionLabel("CRÉNEAUX DISPONIBLES")
         Spacer(Modifier.height(8.dp))
@@ -572,138 +533,60 @@ fun SlotSelector(
                     .clip(RoundedCornerShape(8.dp))
                     .border(
                         width = if (isSelected) 2.dp else 1.dp,
-                        color = when {
-                            isSelected -> CalanquesTheme.Blue
-                            else       -> CalanquesTheme.LightGrey
-                        },
+                        color = if (isSelected) CalanquesTheme.Blue else CalanquesTheme.LightGrey,
                         shape = RoundedCornerShape(8.dp)
                     )
-                    .background(
-                        when {
-                            isSelected -> CalanquesTheme.Blue.copy(alpha = 0.08f)
-                            isFull     -> Color(0xFFF5F5F5)
-                            else       -> CalanquesTheme.White
-                        }
-                    )
+                    .background(when {
+                        isSelected -> CalanquesTheme.Blue.copy(alpha = 0.08f)
+                        isFull     -> Color(0xFFF5F5F5)
+                        else       -> CalanquesTheme.White
+                    })
                     .clickable(enabled = !isFull) { onHeureSelected(slot.heure) }
                     .padding(horizontal = 14.dp, vertical = 11.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment     = Alignment.CenterVertically
             ) {
+                Text(slot.heure, fontSize = 14.sp, fontFamily = CalanquesTheme.CalibriFamily,
+                    color = if (isFull) CalanquesTheme.LightGrey else CalanquesTheme.Black,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
                 Text(
-                    text       = slot.heure,
-                    fontSize   = 14.sp,
-                    fontFamily = CalanquesTheme.CalibriFamily,
-                    color      = if (isFull) CalanquesTheme.LightGrey else CalanquesTheme.Black,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                )
-                Text(
-                    text       = if (isFull) "Complet" else "${slot.places_restantes} places",
-                    fontSize   = 12.sp,
-                    fontFamily = CalanquesTheme.CalibriFamily,
-                    color      = when {
-                        isFull     -> CalanquesTheme.Red
-                        isSelected -> CalanquesTheme.Blue
-                        else       -> CalanquesTheme.Grey
-                    }
+                    text = if (isFull) "Complet" else "${slot.places_restantes} places",
+                    fontSize = 12.sp, fontFamily = CalanquesTheme.CalibriFamily,
+                    color = when { isFull -> CalanquesTheme.Red; isSelected -> CalanquesTheme.Blue; else -> CalanquesTheme.Grey }
                 )
             }
         }
     }
 }
 
-// ─────────────────────────────────────────────
-// Chip info (tarif, places)
-// ─────────────────────────────────────────────
 @Composable
-fun InfoChip(
-    icon: String? = null,
-    iconRes: Int? = null,
-    value: String
-) {
+fun InfoChip(icon: String? = null, iconRes: Int? = null, value: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier          = Modifier
-            .clip(RoundedCornerShape(20.dp))
+        modifier          = Modifier.clip(RoundedCornerShape(20.dp))
             .background(CalanquesTheme.LightGrey.copy(alpha = 0.30f))
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
-        if (icon != null) {
-            Text(
-                text       = icon,
-                fontSize   = 13.sp,
-                fontFamily = CalanquesTheme.CalibriFamily,
-                color      = CalanquesTheme.Grey
-            )
-        } else if (iconRes != null) {
-            Icon(
-                painter            = painterResource(iconRes),
-                contentDescription = null,
-                tint               = CalanquesTheme.Grey,
-                modifier           = Modifier.size(15.dp)
-            )
-        }
+        if (icon != null) Text(icon, fontSize = 13.sp, fontFamily = CalanquesTheme.CalibriFamily, color = CalanquesTheme.Grey)
+        else if (iconRes != null) Icon(painterResource(iconRes), null, tint = CalanquesTheme.Grey, modifier = Modifier.size(15.dp))
         Spacer(Modifier.width(5.dp))
-        Text(
-            text       = value,
-            fontSize   = 13.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = CalanquesTheme.CalibriFamily,
-            color      = CalanquesTheme.Black
-        )
+        Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, fontFamily = CalanquesTheme.CalibriFamily, color = CalanquesTheme.Black)
     }
 }
 
-// ─────────────────────────────────────────────
-// Compteur de participants
-// ─────────────────────────────────────────────
 @Composable
-fun ParticipantCounter(
-    value: Int,
-    onMinus: () -> Unit,
-    onPlus: () -> Unit
-) {
+fun ParticipantCounter(value: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier          = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .border(1.dp, CalanquesTheme.LightGrey, RoundedCornerShape(20.dp))
+        modifier          = Modifier.clip(RoundedCornerShape(20.dp)).border(1.dp, CalanquesTheme.LightGrey, RoundedCornerShape(20.dp))
     ) {
-        Box(
-            modifier         = Modifier
-                .size(34.dp)
-                .clickable(onClick = onMinus),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                "−",
-                fontSize   = 18.sp,
-                fontFamily = CalanquesTheme.CalibriFamily,
-                color      = CalanquesTheme.Blue,
-                fontWeight = FontWeight.Bold
-            )
+        Box(modifier = Modifier.size(34.dp).clickable(onClick = onMinus), contentAlignment = Alignment.Center) {
+            Text("−", fontSize = 18.sp, fontFamily = CalanquesTheme.CalibriFamily, color = CalanquesTheme.Blue, fontWeight = FontWeight.Bold)
         }
-        Text(
-            text       = value.toString(),
-            fontSize   = 15.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = CalanquesTheme.CalibriFamily,
-            color      = CalanquesTheme.Black,
-            modifier   = Modifier.padding(horizontal = 8.dp)
-        )
-        Box(
-            modifier         = Modifier
-                .size(34.dp)
-                .clickable(onClick = onPlus),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                "+",
-                fontSize   = 18.sp,
-                fontFamily = CalanquesTheme.CalibriFamily,
-                color      = CalanquesTheme.Blue,
-                fontWeight = FontWeight.Bold
-            )
+        Text(value.toString(), fontSize = 15.sp, fontWeight = FontWeight.Bold,
+            fontFamily = CalanquesTheme.CalibriFamily, color = CalanquesTheme.Black, modifier = Modifier.padding(horizontal = 8.dp))
+        Box(modifier = Modifier.size(34.dp).clickable(onClick = onPlus), contentAlignment = Alignment.Center) {
+            Text("+", fontSize = 18.sp, fontFamily = CalanquesTheme.CalibriFamily, color = CalanquesTheme.Blue, fontWeight = FontWeight.Bold)
         }
     }
 }

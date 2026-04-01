@@ -89,13 +89,19 @@ fun AppNavigation() {
                 })
             }
 
-            // --- PANIER ---
-            composable(Screen.Panier.route) { PanierScreen() }
+            composable(Screen.Panier.route) {
+                PanierScreen(
+                    onGoToLogin = {
+                        navController.navigate(Screen.Auth.route)
+                    },
+                    onReservationSuccess = {
+                        navController.navigate(Screen.Compte.route)
+                    }
+                )
+            }
 
-            // --- COMPTE (CORRIGÉ) ---
+
             composable(Screen.Compte.route) {
-                // On ne passe plus d'ID utilisateur !
-                // AccountScreen se débrouillera avec le token via /api/users/me
                 AccountScreen(
                     onNavigateToAuth = {
                         navController.navigate(Screen.Auth.route)
@@ -142,7 +148,8 @@ fun AppNavigation() {
 
                 ActivityDetailScreen(
                     activityId = activityId,
-                    onBack     = { navController.popBackStack() }
+                    onBack     = { navController.popBackStack() },
+                    onGoToCart = { navController.navigate(Screen.Panier.route) }
                 )
             }
         }
